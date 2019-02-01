@@ -1,0 +1,2 @@
+#!/bin/bash
+az bot publish --resource-group codsworthBot -n codsworthBot --subscription 58a79de3-59c8-49e4-bf59-5bac04da62c6 -v v4 --proj-name "VirtualAssistant.csproj" 

@@ -171,7 +171,7 @@ namespace AutomotiveSkill.Dialogs.Main
                 var localeConfig = _services.LocaleConfigurations[locale];
 
                 // check general luis intent
-                localeConfig.LuisServices.TryGetValue("general", out var luisService);              
+                localeConfig.LuisServices.TryGetValue("general", out var luisService);
 
                 if (luisService == null)
                 {
