@@ -56,6 +56,11 @@
       <AutoGen>True</AutoGen>
       <DependentUpon>ChangeEventStatusResponses.tt</DependentUpon>
     </Compile>
+    <Compile Update="Dialogs\FindContact\Resources\FindContactResponses.cs">
+      <DependentUpon>FindContactResponses.tt</DependentUpon>
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+    </Compile>
     <Compile Update="Dialogs\JoinEvent\Resources\JoinEventResponses.cs">
       <DesignTime>True</DesignTime>
       <AutoGen>True</AutoGen>
@@ -118,6 +123,10 @@
     <None Update="Dialogs\DeleteEvent\Resources\ChangeEventStatusResponses.tt">
       <Generator>TextTemplatingFileGenerator</Generator>
       <LastGenOutput>ChangeEventStatusResponses.cs</LastGenOutput>
+    </None>
+    <None Update="Dialogs\FindContact\Resources\FindContactResponses.tt">
+      <LastGenOutput>FindContactResponses.cs</LastGenOutput>
+      <Generator>TextTemplatingFileGenerator</Generator>
     </None>
     <None Update="Dialogs\JoinEvent\Resources\JoinEventResponses.tt">
       <Generator>TextTemplatingFileGenerator</Generator>
@@ -210,6 +219,9 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Update="Dialogs\DeleteEvent\Resources\ChangeEventStatusResponses.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Update="Dialogs\FindContact\Resources\FindContactResponses.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Update="Dialogs\JoinEvent\Resources\JoinEventResponses.zh.json">
