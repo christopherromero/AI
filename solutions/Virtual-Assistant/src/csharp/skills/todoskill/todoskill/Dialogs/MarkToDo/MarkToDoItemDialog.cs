@@ -7,7 +7,8 @@ using Microsoft.Bot.Builder;
 using Microsoft.Bot.Builder.Dialogs;
 using Microsoft.Bot.Schema;
 using Microsoft.Bot.Solutions.Dialogs;
-using Microsoft.Bot.Solutions.Extensions;
+using Microsoft.Bot.Solutions.Resources;
+using Microsoft.Bot.Solutions.Responses;
 using Microsoft.Bot.Solutions.Skills;
 using Microsoft.Bot.Solutions.Util;
 using ToDoSkill.Dialogs.MarkToDo.Resources;
@@ -23,11 +24,12 @@ namespace ToDoSkill.Dialogs.MarkToDo
     {
         public MarkToDoItemDialog(
             SkillConfigurationBase services,
+            ResponseManager responseManager,
             IStatePropertyAccessor<ToDoSkillState> toDoStateAccessor,
             IStatePropertyAccessor<ToDoSkillUserState> userStateAccessor,
             IServiceManager serviceManager,
             IBotTelemetryClient telemetryClient)
-            : base(nameof(MarkToDoItemDialog), services, toDoStateAccessor, userStateAccessor, serviceManager, telemetryClient)
+            : base(nameof(MarkToDoItemDialog), services, responseManager, toDoStateAccessor, userStateAccessor, serviceManager, telemetryClient)
         {
             TelemetryClient = telemetryClient;
 
@@ -102,6 +104,7 @@ namespace ToDoSkill.Dialogs.MarkToDo
                 {
                     await service.MarkTasksCompletedAsync(state.ListType, state.AllTasks);
                     state.AllTasks.ForEach(task => task.IsCompleted = true);
+                    state.ShowTaskPageIndex = 0;
                 }
                 else
                 {
@@ -110,6 +113,7 @@ namespace ToDoSkill.Dialogs.MarkToDo
                     state.TaskIndexes.ForEach(i => tasksToBeMarked.Add(state.AllTasks[i]));
                     await service.MarkTasksCompletedAsync(state.ListType, tasksToBeMarked);
                     state.TaskIndexes.ForEach(i => state.AllTasks[i].IsCompleted = true);
+                    state.ShowTaskPageIndex = state.TaskIndexes[0] / state.PageSize;
                 }
 
                 var allTasksCount = state.AllTasks.Count;
@@ -171,7 +175,7 @@ namespace ToDoSkill.Dialogs.MarkToDo
                 var state = await ToDoStateAccessor.GetAsync(sc.Context);
                 if (string.IsNullOrEmpty(state.ListType))
                 {
-                    var prompt = sc.Context.Activity.CreateReply(MarkToDoResponses.ListTypePrompt);
+                    var prompt = ResponseManager.GetResponse(MarkToDoResponses.ListTypePromptForComplete);
                     return await sc.PromptAsync(Action.Prompt, new PromptOptions() { Prompt = prompt });
                 }
                 else
@@ -236,7 +240,16 @@ namespace ToDoSkill.Dialogs.MarkToDo
                 }
                 else
                 {
-                    var prompt = sc.Context.Activity.CreateReply(MarkToDoResponses.AskTaskIndex);
+                    Activity prompt;
+                    if (state.CollectIndexRetry)
+                    {
+                        prompt = ResponseManager.GetResponse(MarkToDoResponses.AskTaskIndexRetryForComplete);
+                    }
+                    else
+                    {
+                        prompt = ResponseManager.GetResponse(MarkToDoResponses.AskTaskIndexForComplete);
+                    }
+
                     return await sc.PromptAsync(Action.Prompt, new PromptOptions() { Prompt = prompt });
                 }
             }
@@ -252,6 +265,8 @@ namespace ToDoSkill.Dialogs.MarkToDo
             try
             {
                 var state = await ToDoStateAccessor.GetAsync(sc.Context);
+                state.CollectIndexRetry = false;
+
                 var matchedIndexes = Enumerable.Range(0, state.AllTasks.Count)
                     .Where(i => state.AllTasks[i].Topic.Equals(state.TaskContentPattern, StringComparison.OrdinalIgnoreCase)
                     || state.AllTasks[i].Topic.Equals(state.TaskContentML, StringComparison.OrdinalIgnoreCase))
@@ -292,6 +307,7 @@ namespace ToDoSkill.Dialogs.MarkToDo
                 {
                     state.TaskContentPattern = null;
                     state.TaskContentML = null;
+                    state.CollectIndexRetry = true;
                     return await sc.ReplaceDialogAsync(Action.CollectTaskIndexForComplete);
                 }
             }
@@ -319,8 +335,8 @@ namespace ToDoSkill.Dialogs.MarkToDo
         {
             try
             {
-                var prompt = sc.Context.Activity.CreateReply(MarkToDoResponses.CompleteAnotherTaskPrompt);
-                var retryPrompt = sc.Context.Activity.CreateReply(MarkToDoResponses.CompleteAnotherTaskConfirmFailed);
+                var prompt = ResponseManager.GetResponse(MarkToDoResponses.CompleteAnotherTaskPrompt);
+                var retryPrompt = ResponseManager.GetResponse(MarkToDoResponses.CompleteAnotherTaskConfirmFailed);
                 return await sc.PromptAsync(Action.ConfirmPrompt, new PromptOptions() { Prompt = prompt, RetryPrompt = retryPrompt });
             }
             catch (Exception ex)
@@ -350,7 +366,7 @@ namespace ToDoSkill.Dialogs.MarkToDo
                 }
                 else
                 {
-                    await sc.Context.SendActivityAsync(sc.Context.Activity.CreateReply(ToDoSharedResponses.ActionEnded));
+                    await sc.Context.SendActivityAsync(ResponseManager.GetResponse(ToDoSharedResponses.ActionEnded));
                     return await sc.EndDialogAsync(true);
                 }
             }

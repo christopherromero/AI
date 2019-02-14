@@ -8,6 +8,7 @@ namespace AutomotiveSkill.Common
     using System.Globalization;
     using System.IO;
     using System.Linq;
+    using System.Reflection;
     using System.Text.RegularExpressions;
     using global::AutomotiveSkill.Models;
 
@@ -42,13 +43,27 @@ namespace AutomotiveSkill.Common
             this.settingMatcher = new SettingMatcher(this.settingList);
             this.numberNormalizer = new NumberNormalizer();
 
-            var resDir = Path.Combine(
-                Path.GetDirectoryName(typeof(SettingFilter).Assembly.Location),
-                "Dialogs\\VehicleSettings\\Resources\\normalization\\");
+            // Supporting setting files are stored as embeddded resources
+            Assembly resourceAssembly = typeof(SettingFilter).Assembly;
 
-            this.amountNormalizer = new EntityNormalizer(resDir + "amount_percentage.tsv");
-            this.typeNormalizer = new EntityNormalizer(resDir + "amount_type.tsv");
-            this.unitNormalizer = new EntityNormalizer(resDir + "amount_unit.tsv");
+            var amountNormalizerFile = resourceAssembly
+               .GetManifestResourceNames()
+               .Where(x => x.Contains("amount_percentage.tsv"))
+               .First();
+
+            var typeNormalizerFile = resourceAssembly
+                .GetManifestResourceNames()
+                .Where(x => x.Contains("amount_type.tsv"))
+                .First();
+
+            var unitNormalizerFile = resourceAssembly
+                .GetManifestResourceNames()
+                .Where(x => x.Contains("amount_unit.tsv"))
+                .First();
+
+            this.amountNormalizer = new EntityNormalizer(resourceAssembly, amountNormalizerFile);
+            this.typeNormalizer = new EntityNormalizer(resourceAssembly, typeNormalizerFile);
+            this.unitNormalizer = new EntityNormalizer(resourceAssembly, unitNormalizerFile);
         }
 
         /// <summary>
@@ -346,11 +361,11 @@ namespace AutomotiveSkill.Common
         }
 
         /// <summary>
-        /// Apply the selecting setting value to the setting values.
+        /// Apply the user's selection to the setting values.
         /// </summary>
         /// <param name="state">State object.</param>
         /// <param name="entityValues">List of entity values.</param>
-        /// <returns>Setting.</returns>
+        /// <returns>The selected SettingChanges or null if no selection was made.</returns>
         public IList<SettingChange> ApplySelectionToSettingValues(AutomotiveSkillState state, List<string> entityValues)
         {
             if (state == null)
@@ -528,7 +543,14 @@ namespace AutomotiveSkill.Common
             return validity;
         }
 
-        private IList<T> ApplySelectionToSettings<T>(AutomotiveSkillState state, List<string> settingEntities, IList<T> changesOrStatuses)
+        /// <summary>
+        /// Apply the user's selection to the setting names.
+        /// </summary>
+        /// <param name="state">State object.</param>
+        /// <param name="settingEntities">List of entity values.</param>
+        /// <param name="changesOrStatuses">The SettingChanges or SettingStatuses to select from.</param>
+        /// <returns>The selected SettingChanges or SettingStatuses or null if no selection was made.</returns>
+        public IList<T> ApplySelectionToSettings<T>(AutomotiveSkillState state, List<string> settingEntities, IList<T> changesOrStatuses)
             where T : SettingOperation
         {
             if (state == null)
@@ -651,7 +673,7 @@ namespace AutomotiveSkill.Common
                 return newCandidates;
             }
 
-            return changesOrStatuses;
+            return null;
         }
 
         /// <summary>

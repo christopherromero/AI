@@ -4,14 +4,9 @@ using Microsoft.Bot.Solutions.Resources;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Newtonsoft.Json;
 using System;
-using System.Collections.Generic;
-using System.Text;
 using System.Threading.Tasks;
-using VirtualAssistant.Dialogs.Escalate;
 using VirtualAssistant.Dialogs.Escalate.Resources;
-using VirtualAssistant.Dialogs.Main;
 using VirtualAssistant.Dialogs.Main.Resources;
-using VirtualAssistant.Dialogs.Onboarding;
 using VirtualAssistant.Dialogs.Onboarding.Resources;
 using VirtualAssistant.Tests.TestHelpers;
 using VirtualAssistant.Tests.Utterances;
@@ -38,53 +33,6 @@ namespace VirtualAssistant.Tests
                .Send(startConversationEvent)
                .AssertReply(ValidateEventReceived(startConversationEvent.Name))
                .AssertReply(ValidateIntroCard())
-               .StartTestAsync();
-        }
-
-        [TestMethod]
-        public async Task OnboardingFlow()
-        {
-            var startConversationEvent = new Activity
-            {
-                Type = ActivityTypes.Event,
-                Name = "startConversation",
-                Locale = "en-us"
-            };
-
-            string userName = "Alice";
-            string location = "London";
-
-            await this.GetTestFlow()
-               .Send(startConversationEvent)
-               .AssertReply(ValidateEventReceived(startConversationEvent.Name))
-               .AssertReply(ValidateIntroCard())
-               .AssertReply(OnboardingStrings.NAME_PROMPT)
-               .Send(userName)
-               .AssertReply(string.Format(OnboardingStrings.LOCATION_PROMPT, userName))
-               .Send(location)
-               .AssertReply(string.Format(OnboardingStrings.HAVE_LOCATION, location))
-               .AssertReply(ValidateHeroCardResponse())
-               .AssertReply(MainStrings.COMPLETED)
-               .StartTestAsync();
-        }
-
-        [TestMethod]
-        public async Task CancelOnboardingFlow()
-        {
-            var startConversationEvent = new Activity
-            {
-                Type = ActivityTypes.Event,
-                Name = "startConversation",
-                Locale = "en-us"
-            };
-
-            await this.GetTestFlow()
-               .Send(startConversationEvent)
-               .AssertReply(ValidateEventReceived(startConversationEvent.Name))
-               .AssertReply(ValidateIntroCard())
-               .AssertReply(OnboardingStrings.NAME_PROMPT)
-               .Send(GeneralUtterances.Cancel)
-               .AssertReply(MainStrings.CANCELLED)
                .StartTestAsync();
         }
 
@@ -197,7 +145,7 @@ namespace VirtualAssistant.Tests
             .AssertReply(this.ValidateAzureMapsKeyPrompt())
             .AssertReply(this.CheckForSkillInvocationError())
 
-             // .AssertReply(this.CheckForEndOfConversationEvent())
+            // .AssertReply(this.CheckForEndOfConversationEvent())
             .StartTestAsync();
         }
 
@@ -279,7 +227,7 @@ namespace VirtualAssistant.Tests
             return activity =>
             {
                 var messageActivity = activity.AsMessageActivity();
-                Assert.AreEqual("application/vnd.microsoft.card.hero", messageActivity.Attachments[0].ContentType );
+                Assert.AreEqual("application/vnd.microsoft.card.hero", messageActivity.Attachments[0].ContentType);
                 Assert.IsFalse(string.IsNullOrEmpty(messageActivity.Speak));
             };
         }
@@ -342,7 +290,8 @@ namespace VirtualAssistant.Tests
             return activity =>
             {
                 var messageActivity = activity.AsMessageActivity();
-                Assert.AreEqual(messageActivity.Text, CommonResponses.ErrorMessage_SkillError.Reply.Text);
+                var response = ResponseManager.GetResponseTemplate(CommonResponses.ErrorMessage_SkillError);
+                Assert.AreEqual(messageActivity.Text, response.Reply.Text);
             };
         }
 
